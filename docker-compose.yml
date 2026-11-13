@@ -1,0 +1,43 @@
+services:
+  backend:
+    build:
+      context: ../noir-bijoux/backend
+      dockerfile: Dockerfile
+    env_file:
+      - ../noir-bijoux/backend/.env
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      CORS_ORIGIN: "https://noir-bijoux.localhost"
+    expose:
+      - "4000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../noir-bijoux/frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: "/api"
+    environment:
+      NODE_ENV: production
+      HOST: "0.0.0.0"
+      PORT: "3000"
+    expose:
+      - "3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  nginx:
+    image: public.ecr.aws/nginx/nginx:mainline-alpine-amd64
+    ports:
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
